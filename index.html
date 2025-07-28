@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Solar Interactivo</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            color: white;
+            text-align: center;
+            width: 100%;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="solarSystem"></canvas>
+    <div class="controls">
+        <button id="speedUp">Acelerar</button>
+        <button id="speedDown">Desacelerar</button>
+        <div id="speedInfo">Velocidad: 1x</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('solarSystem');
+        const ctx = canvas.getContext('2d');
+        
+        // Ajustar tamaño del canvas
+        canvas.width = window.innerWidth * 0.9;
+        canvas.height = window.innerHeight * 0.9;
+        
+        // Variables del sistema
+        let speed = 1;
+        const center = { x: canvas.width / 2, y: canvas.height / 2 };
+        
+        // Objetos celestes
+        const sun = {
+            x: center.x,
+            y: center.y,
+            radius: 30,
+            color: '#FFD700'
+        };
+        
+        const planets = [
+            { name: 'Mercurio', radius: 8, distance: 70, angle: 0, speed: 0.02, color: '#A9A9A9', moons: [] },
+            { name: 'Venus', radius: 12, distance: 110, angle: 0, speed: 0.015, color: '#FFA07A', moons: [] },
+            { name: 'Tierra', radius: 13, distance: 170, angle: 0, speed: 0.01, color: '#1E90FF', moons: [
+                { radius: 4, distance: 25, angle: 0, speed: 0.05, color: '#C0C0C0' }
+            ]},
+            { name: 'Marte', radius: 11, distance: 220, angle: 0, speed: 0.008, color: '#FF6347', moons: [
+                { radius: 3, distance: 20, angle: 0, speed: 0.04, color: '#A9A9A9' },
+                { radius: 3.5, distance: 18, angle: Math.PI, speed: 0.06, color: '#808080' }
+            ]}
+        ];
+        
+        // Asteroides
+        const asteroids = Array.from({ length: 50 }, (_, i) => ({
+            radius: 2,
+            distance: 250 + Math.random() * 100,
+            angle: Math.random() * Math.PI * 2,
+            speed: 0.002 + Math.random() * 0.003,
+            color: '#888'
+        }));
+        
+        // Dibujar funciones
+        function drawCelestialBody(x, y, radius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            // Efecto de brillo para el sol
+            if (radius === sun.radius) {
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius * 1.5);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x - radius * 1.5, y - radius * 1.5, radius * 2.5, radius * 2.5);
+            }
+        }
+        
+        function drawOrbit(distance) {
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, distance, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.stroke();
+        }
+        
+        // Animación
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar órbitas
+            planets.forEach(planet => drawOrbit(planet.distance));
+            drawOrbit(280); // Órbita de asteroides
+            
+            // Dibujar sol
+            drawCelestialBody(sun.x, sun.y, sun.radius, sun.color);
+            
+            // Dibujar planetas y lunas
+            planets.forEach(planet => {
+                planet.angle += planet.speed * speed;
+                const planetX = center.x + planet.distance * Math.cos(planet.angle);
+                const planetY = center.y + planet.distance * Math.sin(planet.angle);
+                
+                drawCelestialBody(planetX, planetY, planet.radius, planet.color);
+                
+                // Lunas
+                planet.moons.forEach(moon => {
+                    moon.angle += moon.speed * speed;
+                    const moonX = planetX + moon.distance * Math.cos(moon.angle);
+                    const moonY = planetY + moon.distance * Math.sin(moon.angle);
+                    drawCelestialBody(moonX, moonY, moon.radius, moon.color);
+                });
+            });
+            
+            // Dibujar asteroides
+            asteroids.forEach(asteroid => {
+                asteroid.angle += asteroid.speed * speed;
+                const asteroidX = center.x + asteroid.distance * Math.cos(asteroid.angle);
+                const asteroidY = center.y + asteroid.distance * Math.sin(asteroid.angle);
+                drawCelestialBody(asteroidX, asteroidY, asteroid.radius, asteroid.color);
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Controles
+        document.getElementById('speedUp').addEventListener('click', () => {
+            speed *= 1.5;
+            document.getElementById('speedInfo').textContent = `Velocidad: ${speed.toFixed(1)}x`;
+        });
+        
+        document.getElementById('speedDown').addEventListener('click', () => {
+            speed /= 1.5;
+            document.getElementById('speedInfo').textContent = `Velocidad: ${speed.toFixed(1)}x`;
+        });
+        
+        // Iniciar animación
+        animate();
+        
+        // Redimensionar canvas
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = window.innerHeight * 0.9;
+            center.x = canvas.width / 2;
+            center.y = canvas.height / 2;
+        });
+    </script>
+</body>
+</html>
